@@ -71,6 +71,11 @@ spec:
       labels:
         app: kube-news
     spec:
+      # Criado fora do manifesto (não versionar credencial):
+      # kubectl -n kube-news create secret docker-registry harbor-cred \
+      #   --docker-server=harbor.nexuno.com.br --docker-username=<user> --docker-password=<pass>
+      imagePullSecrets:
+        - name: harbor-cred
       initContainers:
         - name: wait-for-postgres
           image: postgres:18-alpine
@@ -80,7 +85,8 @@ spec:
             - until pg_isready -h postgres -p 5432; do echo "aguardando o banco"; sleep 2; done
       containers:
         - name: kube-news
-          image: fabricioveronez/kube-news-aiops:1.0.0
+          image: harbor.nexuno.com.br/sistemas/kube-news:1.1.0
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
           env:
@@ -116,6 +122,10 @@ spec:
             limits:
               cpu: 500m
               memory: 256Mi
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            allowPrivilegeEscalation: false
 ---
 apiVersion: v1
 kind: Service
